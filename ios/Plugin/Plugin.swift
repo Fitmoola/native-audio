@@ -34,7 +34,9 @@ public class NativeAudio: CAPPlugin {
 
         do {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(AVAudioSession.Category.playback)
+            try session.setCategory(AVAudioSession.Category.playback, options: [
+                AVAudioSession.CategoryOptions.mixWithOthers
+            ])
             try session.setActive(false)
         } catch {
             print("Failed to ")
