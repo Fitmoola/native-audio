@@ -64,7 +64,7 @@ public class NativeAudio: CAPPlugin {
                     let asset = self.audioList[audioId]
 
                     if asset != nil {
-                        if asset is AudioAsset {
+                        if asset is BaseAudioAsset {
                             let audioAsset = asset as? AudioAsset
 
                             if self.fadeMusic {
@@ -89,7 +89,7 @@ public class NativeAudio: CAPPlugin {
         }
     }
 
-    @objc private func getAudioAsset(_ call: CAPPluginCall) -> AudioAsset? {
+    @objc private func getAudioAsset(_ call: CAPPluginCall) -> BaseAudioAsset? {
         let audioId = call.getString(Constant.AssetIdKey) ?? ""
         if audioId == "" {
             call.error(Constant.ErrorAssetId)
@@ -97,8 +97,8 @@ public class NativeAudio: CAPPlugin {
         }
         if self.audioList.count > 0 {
             let asset = self.audioList[audioId]
-            if asset != nil && asset is AudioAsset {
-                return asset as? AudioAsset
+            if asset != nil && asset is BaseAudioAsset {
+                return asset as? BaseAudioAsset
             }
         }
         call.error(Constant.ErrorAssetNotFound + " - " + audioId)
@@ -107,7 +107,7 @@ public class NativeAudio: CAPPlugin {
 
 
     @objc func getDuration(_ call: CAPPluginCall) {
-        guard let audioAsset: AudioAsset = self.getAudioAsset(call) else {
+        guard let audioAsset: BaseAudioAsset = self.getAudioAsset(call) else {
             return
         }
 
@@ -117,7 +117,7 @@ public class NativeAudio: CAPPlugin {
     }
 
     @objc func getCurrentTime(_ call: CAPPluginCall) {
-        guard let audioAsset: AudioAsset = self.getAudioAsset(call) else {
+        guard let audioAsset: BaseAudioAsset = self.getAudioAsset(call) else {
             return
         }
 
@@ -127,7 +127,7 @@ public class NativeAudio: CAPPlugin {
     }
 
     @objc func resume(_ call: CAPPluginCall) {
-        guard let audioAsset: AudioAsset = self.getAudioAsset(call) else {
+        guard let audioAsset: BaseAudioAsset = self.getAudioAsset(call) else {
             return
         }
 
@@ -136,7 +136,7 @@ public class NativeAudio: CAPPlugin {
     }
 
     @objc func pause(_ call: CAPPluginCall) {
-        guard let audioAsset: AudioAsset = self.getAudioAsset(call) else {
+        guard let audioAsset: BaseAudioAsset = self.getAudioAsset(call) else {
            return
         }
 
@@ -155,7 +155,7 @@ public class NativeAudio: CAPPlugin {
     }
 
     @objc func loop(_ call: CAPPluginCall) {
-        guard let audioAsset: AudioAsset = self.getAudioAsset(call) else {
+        guard let audioAsset: BaseAudioAsset = self.getAudioAsset(call) else {
             return
         }
 
@@ -167,7 +167,7 @@ public class NativeAudio: CAPPlugin {
         let audioId = call.getString(Constant.AssetIdKey) ?? ""
         if self.audioList.count > 0 {
             let asset = self.audioList[audioId]
-            if asset != nil && asset is AudioAsset {
+            if asset != nil && asset is BaseAudioAsset {
                 let audioAsset = asset as! AudioAsset
                 audioAsset.unload();
                 self.audioList[audioId] = nil
@@ -178,7 +178,7 @@ public class NativeAudio: CAPPlugin {
     }
 
     @objc func setVolume(_ call: CAPPluginCall) {
-        guard let audioAsset: AudioAsset = self.getAudioAsset(call) else {
+        guard let audioAsset: BaseAudioAsset = self.getAudioAsset(call) else {
             return
         }
 
@@ -259,7 +259,7 @@ public class NativeAudio: CAPPlugin {
             let asset = self.audioList[audioId]
 
             if asset != nil {
-                if asset is AudioAsset {
+                if asset is BaseAudioAsset {
                     let audioAsset = asset as? AudioAsset
 
                     if self.fadeMusic {
