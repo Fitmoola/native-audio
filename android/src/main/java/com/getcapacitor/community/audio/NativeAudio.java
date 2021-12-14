@@ -391,27 +391,42 @@ public class NativeAudio
           audioChannelNum = call.getInt(AUDIO_CHANNEL_NUM);
         }
 
-        AssetFileDescriptor assetFileDescriptor;
-        if (isUrl) {
-          File f = new File(new URI(fullPath));
-          ParcelFileDescriptor p = ParcelFileDescriptor.open(
-            f,
-            ParcelFileDescriptor.MODE_READ_ONLY
+        AudioAsset asset;
+
+        if (fullPath.startsWith("http") || fullPath.startsWith("https")) {
+          // It's a URL, do streaming
+          asset = new AudioAsset(
+            this,
+            audioId,
+            fullPath,
+            audioChannelNum,
+            (float) volume
           );
-          assetFileDescriptor = new AssetFileDescriptor(p, 0, -1);
         } else {
-          Context ctx = getBridge().getActivity().getApplicationContext();
-          AssetManager am = ctx.getResources().getAssets();
-          assetFileDescriptor = am.openFd(fullPath);
+          // The asset it's a local file
+          AssetFileDescriptor assetFileDescriptor;
+          if (isUrl) {
+            File f = new File(new URI(fullPath));
+            ParcelFileDescriptor p = ParcelFileDescriptor.open(
+              f,
+              ParcelFileDescriptor.MODE_READ_ONLY
+            );
+            assetFileDescriptor = new AssetFileDescriptor(p, 0, -1);
+          } else {
+            Context ctx = getBridge().getActivity().getApplicationContext();
+            AssetManager am = ctx.getResources().getAssets();
+            assetFileDescriptor = am.openFd(fullPath);
+          }
+
+          asset = new AudioAsset(
+            this,
+            audioId,
+            assetFileDescriptor,
+            audioChannelNum,
+            (float) volume
+          );
         }
 
-        AudioAsset asset = new AudioAsset(
-          this,
-          audioId,
-          assetFileDescriptor,
-          audioChannelNum,
-          (float) volume
-        );
         audioAssetList.put(audioId, asset);
 
         JSObject status = new JSObject();

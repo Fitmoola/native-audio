@@ -25,18 +25,12 @@ public class AudioDispatcher
   private int mediaState;
   private AudioAsset owner;
 
-  public AudioDispatcher(AssetFileDescriptor assetFileDescriptor, float volume)
-    throws Exception {
+  private AudioDispatcher(float volume) {
     mediaState = INVALID;
 
     mediaPlayer = new MediaPlayer();
     mediaPlayer.setOnCompletionListener(this);
     mediaPlayer.setOnPreparedListener(this);
-    mediaPlayer.setDataSource(
-      assetFileDescriptor.getFileDescriptor(),
-      assetFileDescriptor.getStartOffset(),
-      assetFileDescriptor.getLength()
-    );
     mediaPlayer.setOnSeekCompleteListener(this);
     mediaPlayer.setAudioAttributes(
       new AudioAttributes.Builder()
@@ -45,8 +39,28 @@ public class AudioDispatcher
         .build()
     );
     mediaPlayer.setVolume(volume, volume);
+  }
+
+  public AudioDispatcher(AssetFileDescriptor assetFileDescriptor, float volume)
+    throws Exception {
+    this(volume);
+
+    mediaPlayer.setDataSource(
+      assetFileDescriptor.getFileDescriptor(),
+      assetFileDescriptor.getStartOffset(),
+      assetFileDescriptor.getLength()
+    );
     mediaPlayer.prepare();
   }
+
+  public AudioDispatcher(String url, float volume)
+          throws Exception {
+    this(volume);
+
+    mediaPlayer.setDataSource(url);
+    mediaPlayer.prepare();
+  }
+
 
   public void setOwner(AudioAsset asset) {
     owner = asset;
