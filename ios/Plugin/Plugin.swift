@@ -65,7 +65,7 @@ public class NativeAudio: CAPPlugin {
 
                     if asset != nil {
                         if asset is BaseAudioAsset {
-                            let audioAsset = asset as? AudioAsset
+                            let audioAsset = asset as? BaseAudioAsset
 
                             if self.fadeMusic {
                                 audioAsset?.playWithFade(time: time)
@@ -168,7 +168,7 @@ public class NativeAudio: CAPPlugin {
         if self.audioList.count > 0 {
             let asset = self.audioList[audioId]
             if asset != nil && asset is BaseAudioAsset {
-                let audioAsset = asset as! AudioAsset
+                let audioAsset = asset as! BaseAudioAsset
                 audioAsset.unload();
                 self.audioList[audioId] = nil
             }
@@ -269,7 +269,7 @@ public class NativeAudio: CAPPlugin {
 
             if asset != nil {
                 if asset is BaseAudioAsset {
-                    let audioAsset = asset as? AudioAsset
+                    let audioAsset = asset as? BaseAudioAsset
 
                     if self.fadeMusic {
                         audioAsset?.playWithFade(time: audioAsset?.getCurrentTime() ?? 0)

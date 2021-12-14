@@ -33,7 +33,7 @@ public class RemoteAudioAsset: BaseAudioAsset {
             )
 
         } else {
-            // TODO: handle this scenario
+            print("Failed to create the URL instance for the string \(path ?? "unknown")")
         }
     }
 
