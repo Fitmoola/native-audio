@@ -15,8 +15,8 @@ extension AVPlayer {
 public class RemoteAudioAsset: BaseAudioAsset {
     var player: AVPlayer?
 
-    override init(owner:NativeAudio, withAssetId assetId:String, withPath path: String!, withChannels channels: NSNumber!, withVolume volume: NSNumber!, withFadeDelay delay: NSNumber!) {
-        super.init(owner: owner, withAssetId: assetId, withPath: path, withChannels: channels, withVolume: volume, withFadeDelay: delay)
+    init(owner:NativeAudio, withAssetId assetId:String, withPath path: String!, withVolume volume: NSNumber!) {
+        super.init(owner: owner, withAssetId: assetId, withPath: path, withChannels: 0, withVolume: volume, withFadeDelay: 0)
 
         let assetUrl: URL? = URL(string: path)
 
