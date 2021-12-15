@@ -403,7 +403,7 @@ public class NativeAudio
             (float) volume
           );
         } else {
-          // The asset it's a local file
+          // The asset is a local file
           AssetFileDescriptor assetFileDescriptor;
           if (isUrl) {
             File f = new File(new URI(fullPath));
