@@ -64,8 +64,8 @@ public class NativeAudio: CAPPlugin {
                     let asset = self.audioList[audioId]
 
                     if asset != nil {
-                        if asset is AudioAsset {
-                            let audioAsset = asset as? AudioAsset
+                        if asset is BaseAudioAsset {
+                            let audioAsset = asset as? BaseAudioAsset
 
                             if self.fadeMusic {
                                 audioAsset?.playWithFade(time: time)
@@ -73,15 +73,15 @@ public class NativeAudio: CAPPlugin {
                                 audioAsset?.play(time: time)
                             }
 
-                            call.success()
+                            call.resolve()
                         } else if (asset is Int32) {
                             let audioAsset = asset as? NSNumber ?? 0
 
                             AudioServicesPlaySystemSound(SystemSoundID(audioAsset.intValue ))
 
-                            call.success()
+                            call.resolve()
                         } else {
-                            call.error(Constant.ErrorAssetNotFound)
+                            call.reject(Constant.ErrorAssetNotFound)
                         }
                     }
                 }
@@ -89,25 +89,25 @@ public class NativeAudio: CAPPlugin {
         }
     }
 
-    @objc private func getAudioAsset(_ call: CAPPluginCall) -> AudioAsset? {
+    @objc private func getAudioAsset(_ call: CAPPluginCall) -> BaseAudioAsset? {
         let audioId = call.getString(Constant.AssetIdKey) ?? ""
         if audioId == "" {
-            call.error(Constant.ErrorAssetId)
+            call.reject(Constant.ErrorAssetId)
             return nil
         }
         if self.audioList.count > 0 {
             let asset = self.audioList[audioId]
-            if asset != nil && asset is AudioAsset {
-                return asset as? AudioAsset
+            if asset != nil && asset is BaseAudioAsset {
+                return asset as? BaseAudioAsset
             }
         }
-        call.error(Constant.ErrorAssetNotFound + " - " + audioId)
+        call.reject(Constant.ErrorAssetNotFound + " - " + audioId)
         return nil
     }
 
 
     @objc func getDuration(_ call: CAPPluginCall) {
-        guard let audioAsset: AudioAsset = self.getAudioAsset(call) else {
+        guard let audioAsset: BaseAudioAsset = self.getAudioAsset(call) else {
             return
         }
 
@@ -117,7 +117,7 @@ public class NativeAudio: CAPPlugin {
     }
 
     @objc func getCurrentTime(_ call: CAPPluginCall) {
-        guard let audioAsset: AudioAsset = self.getAudioAsset(call) else {
+        guard let audioAsset: BaseAudioAsset = self.getAudioAsset(call) else {
             return
         }
 
@@ -127,21 +127,21 @@ public class NativeAudio: CAPPlugin {
     }
 
     @objc func resume(_ call: CAPPluginCall) {
-        guard let audioAsset: AudioAsset = self.getAudioAsset(call) else {
+        guard let audioAsset: BaseAudioAsset = self.getAudioAsset(call) else {
             return
         }
 
         audioAsset.resume()
-        call.success()
+        call.resolve()
     }
 
     @objc func pause(_ call: CAPPluginCall) {
-        guard let audioAsset: AudioAsset = self.getAudioAsset(call) else {
+        guard let audioAsset: BaseAudioAsset = self.getAudioAsset(call) else {
            return
         }
 
         audioAsset.pause()
-        call.success()
+        call.resolve()
     }
 
     @objc func stop(_ call: CAPPluginCall) {
@@ -150,42 +150,42 @@ public class NativeAudio: CAPPlugin {
         do {
             try stopAudio(audioId: audioId)
         } catch {
-            call.error(Constant.ErrorAssetNotFound)
+            call.reject(Constant.ErrorAssetNotFound)
         }
     }
 
     @objc func loop(_ call: CAPPluginCall) {
-        guard let audioAsset: AudioAsset = self.getAudioAsset(call) else {
+        guard let audioAsset: BaseAudioAsset = self.getAudioAsset(call) else {
             return
         }
 
         audioAsset.loop()
-        call.success()
+        call.resolve()
     }
 
     @objc func unload(_ call: CAPPluginCall) {
         let audioId = call.getString(Constant.AssetIdKey) ?? ""
         if self.audioList.count > 0 {
             let asset = self.audioList[audioId]
-            if asset != nil && asset is AudioAsset {
-                let audioAsset = asset as! AudioAsset
+            if asset != nil && asset is BaseAudioAsset {
+                let audioAsset = asset as! BaseAudioAsset
                 audioAsset.unload();
                 self.audioList[audioId] = nil
             }
         }
 
-        call.success()
+        call.resolve()
     }
 
     @objc func setVolume(_ call: CAPPluginCall) {
-        guard let audioAsset: AudioAsset = self.getAudioAsset(call) else {
+        guard let audioAsset: BaseAudioAsset = self.getAudioAsset(call) else {
             return
         }
 
         let volume = call.getFloat(Constant.Volume) ?? 1.0
 
         audioAsset.setVolume(volume: volume as NSNumber)
-        call.success()
+        call.resolve()
     }
 
     private func preloadAsset(_ call: CAPPluginCall, isComplex complex: Bool) {
@@ -219,35 +219,44 @@ public class NativeAudio: CAPPlugin {
 
             queue.async {
                 if asset == nil {
-                    var basePath: String?
-                    if isUrl == false {
-                        let ofType = assetPath.fileExtension()
-                        let forResource = assetPath.fileName()
-                        basePath = Bundle.main.path(forResource: forResource, ofType: ofType)
+                    // Check if the assetPath is an HTTP URL
+                    if assetPath.starts(with: "http") || assetPath.starts(with: "https") {
+                        let remoteAudioAsset = RemoteAudioAsset(owner: self, withAssetId: audioId, withPath: assetPath, withVolume: volume as NSNumber?)
+                        self.audioList[audioId] = remoteAudioAsset
+
+                        call.resolve()
                     } else {
-                        let url = URL(string: assetPath)
-                        basePath = url!.path
-                    }
-
-                    if FileManager.default.fileExists(atPath: basePath ?? "") {
-                        if !complex {
-                            let pathUrl = URL(fileURLWithPath: basePath ?? "")
-                            let soundFileUrl: CFURL = CFBridgingRetain(pathUrl) as! CFURL
-                            var soundId = SystemSoundID()
-
-                            AudioServicesCreateSystemSoundID(soundFileUrl, &soundId)
-                            self.audioList[audioId] = NSNumber(value: Int32(soundId))
-
-                            call.success()
+                        // It's a File from local file system
+                        var basePath: String?
+                        if isUrl == false {
+                            let ofType = assetPath.fileExtension()
+                            let forResource = assetPath.fileName()
+                            basePath = Bundle.main.path(forResource: forResource, ofType: ofType)
                         } else {
-                            let audioAsset: AudioAsset = AudioAsset(owner: self, withAssetId: audioId, withPath: basePath, withChannels: channels, withVolume: volume as NSNumber?, withFadeDelay: delay)
-
-                            self.audioList[audioId] = audioAsset
-
-                            call.success()
+                            let url = URL(string: assetPath)
+                            basePath = url!.path
                         }
-                    } else {
-                        call.error(Constant.ErrorAssetPath + " - " + assetPath)
+
+                        if FileManager.default.fileExists(atPath: basePath ?? "") {
+                            if !complex {
+                                let pathUrl = URL(fileURLWithPath: basePath ?? "")
+                                let soundFileUrl: CFURL = CFBridgingRetain(pathUrl) as! CFURL
+                                var soundId = SystemSoundID()
+
+                                AudioServicesCreateSystemSoundID(soundFileUrl, &soundId)
+                                self.audioList[audioId] = NSNumber(value: Int32(soundId))
+
+                                call.resolve()
+                            } else {
+                                let audioAsset: AudioAsset = AudioAsset(owner: self, withAssetId: audioId, withPath: basePath, withChannels: channels, withVolume: volume as NSNumber?, withFadeDelay: delay)
+
+                                self.audioList[audioId] = audioAsset
+
+                                call.resolve()
+                            }
+                        } else {
+                            call.reject(Constant.ErrorAssetPath + " - " + assetPath)
+                        }
                     }
                 }
             }
@@ -259,8 +268,8 @@ public class NativeAudio: CAPPlugin {
             let asset = self.audioList[audioId]
 
             if asset != nil {
-                if asset is AudioAsset {
-                    let audioAsset = asset as? AudioAsset
+                if asset is BaseAudioAsset {
+                    let audioAsset = asset as? BaseAudioAsset
 
                     if self.fadeMusic {
                         audioAsset?.playWithFade(time: audioAsset?.getCurrentTime() ?? 0)
