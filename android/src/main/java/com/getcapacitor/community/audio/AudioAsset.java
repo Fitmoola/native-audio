@@ -1,7 +1,6 @@
 package com.getcapacitor.community.audio;
 
 import android.content.res.AssetFileDescriptor;
-import com.getcapacitor.JSObject;
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
 
@@ -14,6 +13,15 @@ public class AudioAsset {
   private String assetId;
   private NativeAudio owner;
 
+  private AudioAsset(
+    NativeAudio owner,
+    String assetId
+  ) {
+    audioList = new ArrayList<>();
+    this.owner = owner;
+    this.assetId = assetId;
+  }
+
   AudioAsset(
     NativeAudio owner,
     String assetId,
@@ -22,9 +30,7 @@ public class AudioAsset {
     float volume
   )
     throws Exception {
-    audioList = new ArrayList<>();
-    this.owner = owner;
-    this.assetId = assetId;
+    this(owner, assetId);
 
     if (audioChannelNum < 0) {
       audioChannelNum = 1;
@@ -35,6 +41,26 @@ public class AudioAsset {
         assetFileDescriptor,
         volume
       );
+      audioList.add(audioDispatcher);
+      if (audioChannelNum == 1) audioDispatcher.setOwner(this);
+    }
+  }
+
+  AudioAsset(
+    NativeAudio owner,
+    String assetId,
+    String url,
+    int audioChannelNum,
+    float volume
+  ) throws Exception {
+    this(owner, assetId);
+
+    if (audioChannelNum < 0) {
+      audioChannelNum = 1;
+    }
+
+    for (int x = 0; x < audioChannelNum; x++) {
+      AudioDispatcher audioDispatcher = new AudioDispatcher(url, volume);
       audioList.add(audioDispatcher);
       if (audioChannelNum == 1) audioDispatcher.setOwner(this);
     }
